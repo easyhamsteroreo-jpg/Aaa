@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Easy Post — Мультироль</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f2f2f6;
+            padding-bottom: 70px;
+        }
+        .app {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+        /* Экран входа */
+        .screen {
+            padding: 24px 16px;
+        }
+        .hidden {
+            display: none;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #eef2f6;
+        }
+        .card-title {
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-left: 4px solid #1a5c9e;
+            padding-left: 12px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #d4d4d8;
+            border-radius: 14px;
+            font-size: 16px;
+            background: #f9fafb;
+        }
+        button {
+            background: #1a5c9e;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 500;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        button.secondary {
+            background: #eef2f9;
+            color: #1a5c9e;
+            border: 1px solid #cbd5e1;
+        }
+        .role-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .role-buttons button {
+            flex: 1;
+            background: #f1f3f5;
+            color: #1e293b;
+        }
+        .role-buttons button.selected {
+            background: #1a5c9e;
+            color: white;
+        }
+        .parcel-item {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .parcel-id {
+            font-family: monospace;
+            font-weight: bold;
+            background: #eef2ff;
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .status-created { background: #e0e7ff; color: #3730a3; }
+        .status-office { background: #fff3e3; color: #b45309; }
+        .status-courier { background: #dbeafe; color: #1e40af; }
+        .status-delivered { background: #dcfce7; color: #15803d; }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .geo-info {
+            font-size: 12px;
+            color: #475569;
+            margin-top: 8px;
+            word-break: break-all;
+        }
+        iframe {
+            width: 100%;
+            height: 200px;
+            border-radius: 16px;
+            margin-top: 8px;
+        }
+        .logout-btn {
+            background: #dc2626;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- Экран входа / регистрации -->
+    <div id="loginScreen" class="screen">
+        <div class="card">
+            <div class="card-title">📱 Вход в Easy Post</div>
+            <input type="tel" id="phoneNumber" placeholder="+380xxxxxxxxx" value="+380991234567">
+            <button id="sendCodeBtn">📲 Отправить код</button>
+            <div id="codeSection" class="hidden">
+                <input type="text" id="smsCode" placeholder="Код из SMS">
+                <button id="verifyCodeBtn">✅ Подтвердить</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-title">ℹ️ Демо-режим</div>
+            <p style="font-size:14px; color:#555;">Код подтверждения: <strong>123456</strong> (имитация)</p>
+            <p style="font-size:12px; color:#777;">После входа выберите роль.</p>
+        </div>
+    </div>
+
+    <!-- Экран выбора роли (после верификации) -->
+    <div id="roleScreen" class="screen hidden">
+        <div class="card">
+            <div class="card-title">👤 Выберите вашу роль</div>
+            <div class="role-buttons">
+                <button data-role="user">📦 Пользователь</button>
+                <button data-role="worker">🏢 Работник почты</button>
+                <button data-role="courier">🚚 Курьер</button>
+            </div>
+            <button id="confirmRoleBtn" class="secondary">Подтвердить роль</button>
+            <button id="logoutFromRoleBtn" class="logout-btn secondary">Выйти из аккаунта</button>
+        </div>
+    </div>
+
+    <!-- Панель Пользователь -->
+    <div id="userPanel" class="panel hidden">
+        <div class="card">
+            <div class="card-title">➕ Отправить посылку</div>
+            <input type="text" id="userFromName" placeholder="Ваше имя" value="Иван Петров">
+            <input type="text" id="userToName" placeholder="Кому (ФИО)" value="Анна Сидорова">
+            <input type="text" id="userToAddress" placeholder="Адрес доставки" value="ул. Богдана Хмельницкого 53, Овруч">
+            <input type="text" id="userWeight" placeholder="Вес (кг)" value="2.3">
+            <button id="userCreateParcelBtn">📮 Создать посылку</button>
+        </div>
+        <div class="card">
+            <div class="card-title">📋 Мои посылки</div>
+            <div id="userParcelsList">Загрузка...</div>
+        </div>
+        <div class="card">
+            <div class="card-title">🎥 Easy Союз — YouTube</div>
+            <iframe src="https://www.youtube.com/embed?listType=user_uploads&list=UC5o6S7g916gt-zC8nEFQQiw" title="Easy Союз" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <button id="logoutUserBtn" class="logout-btn secondary">Выйти</button>
+    </div>
+
+    <!-- Панель Работник почты -->
+    <div id="workerPanel" class="panel hidden">
+        <div class="card">
+            <div class="card-title">📦 Все посылки (приём/выдача)</div>
+            <div id="workerParcelsList">Загрузка...</div>
+        </div>
+        <button id="logoutWorkerBtn" class="logout-btn secondary">Выйти</button>
+    </div>
+
+    <!-- Панель Курьер -->
+    <div id="courierPanel" class="panel hidden">
+        <div class="card">
+            <div class="card-title">🚚 Мои назначенные посылки</div>
+            <div id="courierParcelsList">Загрузка...</div>
+        </div>
+        <button id="logoutCourierBtn" class="logout-btn secondary">Выйти</button>
+    </div>
+</div>
+
+<script>
+    // ---------- Глобальное состояние ----------
+    let currentUser = null;      // { phone, role? }
+    let pendingPhone = null;     // номер до верификации
+    let parcels = [];            // все посылки
+    let users = [];              // список зарегистрированных пользователей (номер, роль?)
+
+    // Загрузка из localStorage
+    function loadData() {
+        const storedParcels = localStorage.getItem('easy_post_parcels');
+        if (storedParcels) parcels = JSON.parse(storedParcels);
+        else {
+            // демо-посылки
+            parcels = [
+                { id: "EP240512001UA", from: "Иван Петров", fromPhone: "+380991234567", to: "Анна Сидорова", address: "ул. Богдана Хмельницкого 53, Овруч", weight: "1.5", status: "created", courierLocation: null, locationHistory: [] },
+                { id: "EP240512002UA", from: "Олег Коваль", fromPhone: "+380671112233", to: "Мария Лис", address: "пр. Свободы, 45, Львов", weight: "3.2", status: "office", courierLocation: null, locationHistory: [] },
+                { id: "EP240511455UA", from: "Сергей Бондар", fromPhone: "+380501234567", to: "Тарас Шевченко", address: "ул. Грушевского, 12, Киев", weight: "0.8", status: "courier", courierLocation: "Киев, склад", locationHistory: [] }
+            ];
+            saveParcels();
+        }
+
+        const storedUsers = localStorage.getItem('easy_post_users');
+        if (storedUsers) users = JSON.parse(storedUsers);
+        else {
+            users = [];
+            saveUsers();
+        }
+    }
+
+    function saveParcels() {
+        localStorage.setItem('easy_post_parcels', JSON.stringify(parcels));
+    }
+
+    function saveUsers() {
+        localStorage.setItem('easy_post_users', JSON.stringify(users));
+    }
+
+    // Генерация трек-номера
+    function generateTrackingNumber() {
+        const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const randomStr = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
+        const numPart = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+        return `EP${numPart}${randomStr}`;
+    }
+
+    // ---------- Авторизация ----------
+    function sendVerificationCode(phone) {
+        // имитация отправки кода на почту / смс
+        const code = "123456";
+        alert(`Код подтверждения (демо): ${code}\nОтправлен на номер ${phone}`);
+        return code;
+    }
+
+    let generatedCode = null;
+
+    document.getElementById('sendCodeBtn').addEventListener('click', () => {
+        let phone = document.getElementById('phoneNumber').value.trim();
+        if (!phone.startsWith('+380') || phone.length < 13) {
+            alert('Номер должен начинаться с +380 и содержать 13 символов (например +380991234567)');
+            return;
+        }
+        pendingPhone = phone;
+        generatedCode = sendVerificationCode(phone);
+        document.getElementById('codeSection').classList.remove('hidden');
+    });
+
+    document.getElementById('verifyCodeBtn').addEventListener('click', () => {
+        const enteredCode = document.getElementById('smsCode').value.trim();
+        if (enteredCode === generatedCode || enteredCode === "123456") {
+            // номер подтвержден
+            currentUser = { phone: pendingPhone };
+            // проверяем, есть ли этот пользователь в базе (для запоминания роли, но даём выбрать заново)
+            const existing = users.find(u => u.phone === currentUser.phone);
+            if (existing && existing.role) {
+                // если уже выбирал роль, можно автоматически войти, но по заданию после входа нужно выбрать роль. Даём выбор всегда.
+                // Поэтому просто сохраняем в currentUser роль? Нет, показываем экран выбора.
+            }
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('roleScreen').classList.remove('hidden');
+        } else {
+            alert('Неверный код подтверждения');
+        }
+    });
+
+    // Выбор роли
+    let selectedRole = null;
+    document.querySelectorAll('.role-buttons button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.role-buttons button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedRole = btn.getAttribute('data-role');
+        });
+    });
+
+    document.getElementById('confirmRoleBtn').addEventListener('click', () => {
+        if (!selectedRole) {
+            alert('Выберите роль');
+            return;
+        }
+        // сохраняем пользователя с ролью
+        const userIndex = users.findIndex(u => u.phone === currentUser.phone);
+        if (userIndex === -1) {
+            users.push({ phone: currentUser.phone, role: selectedRole });
+        } else {
+            users[userIndex].role = selectedRole;
+        }
+        saveUsers();
+        currentUser.role = selectedRole;
+        // показать соответствующую панель
+        showRolePanel(selectedRole);
+    });
+
+    function showRolePanel(role) {
+        document.getElementById('roleScreen').classList.add('hidden');
+        document.getElementById('userPanel').classList.add('hidden');
+        document.getElementById('workerPanel').classList.add('hidden');
+        document.getElementById('courierPanel').classList.add('hidden');
+        if (role === 'user') {
+            document.getElementById('userPanel').classList.remove('hidden');
+            renderUserPanel();
+        } else if (role === 'worker') {
+            document.getElementById('workerPanel').classList.remove('hidden');
+            renderWorkerPanel();
+        } else if (role === 'courier') {
+            document.getElementById('courierPanel').classList.remove('hidden');
+            renderCourierPanel();
+        }
+    }
+
+    // Выход
+    function logout() {
+        currentUser = null;
+        selectedRole = null;
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('roleScreen').classList.add('hidden');
+        document.getElementById('userPanel').classList.add('hidden');
+        document.getElementById('workerPanel').classList.add('hidden');
+        document.getElementById('courierPanel').classList.add('hidden');
+        document.getElementById('phoneNumber').value = '';
+        document.getElementById('smsCode').value = '';
+        document.getElementById('codeSection').classList.add('hidden');
+    }
+
+    document.getElementById('logoutFromRoleBtn').addEventListener('click', logout);
+    document.getElementById('logoutUserBtn').addEventListener('click', logout);
+    document.getElementById('logoutWorkerBtn').addEventListener('click', logout);
+    document.getElementById('logoutCourierBtn').addEventListener('click', logout);
+
+    // ---------- Функции для пользователя ----------
+    function createParcelForUser() {
+        if (!currentUser) return;
+        const fromName = document.getElementById('userFromName').value.trim();
+        const toName = document.getElementById('userToName').value.trim();
+        const address = document.getElementById('userToAddress').value.trim();
+        const weight = document.getElementById('userWeight').value.trim();
+        if (!fromName || !toName || !address) {
+            alert("Заполните все поля");
+            return;
+        }
+        const newParcel = {
+            id: generateTrackingNumber(),
+            from: fromName,
+            fromPhone: currentUser.phone,
+            to: toName,
+            address: address,
+            weight: weight || "0",
+            status: "created",
+            courierLocation: null,
+            locationHistory: []
+        };
+        parcels.unshift(newParcel);
+        saveParcels();
+        renderUserPanel();
+        // очистка формы
+        document.getElementById('userFromName').value = '';
+        document.getElementById('userToName').value = '';
+        document.getElementById('userToAddress').value = '';
+        document.getElementById('userWeight').value = '';
+        alert(`Посылка создана! Трек-номер: ${newParcel.id}`);
+    }
+
+    function renderUserPanel() {
+        const container = document.getElementById('userParcelsList');
+        const myParcels = parcels.filter(p => p.fromPhone === currentUser.phone);
+        if (myParcels.length === 0) {
+            container.innerHTML = '<div class="parcel-item">У вас пока нет посылок.</div>';
+            return;
+        }
+        let html = '';
+        myParcels.forEach(p => {
+            let statusText = "";
+            if (p.status === "created") statusText = "Создана (ожидает приёма)";
+            else if (p.status === "office") statusText = "Принята в отделении";
+            else if (p.status === "courier") statusText = "У курьера";
+            else statusText = "Доставлена";
+            let locationInfo = "";
+            if (p.courierLocation) {
+                locationInfo = `<div class="geo-info">📍 Текущее местоположение: ${p.courierLocation}</div>`;
+            }
+            html += `
+                <div class="parcel-item">
+                    <div class="flex-between">
+                        <span class="parcel-id">${p.id}</span>
+                        <span class="status status-${p.status}">${statusText}</span>
+                    </div>
+                    <div>📤 От: ${p.from}</div>
+                    <div>📥 Кому: ${p.to}</div>
+                    <div>📍 Адрес: ${p.address}</div>
+                    <div>⚖️ Вес: ${p.weight} кг</div>
+                    ${locationInfo}
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // ---------- Функции работника почты ----------
+    function updateStatus(parcelId, newStatus, courierLocationText = null) {
+        const parcel = parcels.find(p => p.id === parcelId);
+        if (!parcel) return;
+        parcel.status = newStatus;
+        if (courierLocationText !== undefined && courierLocationText !== null) {
+            parcel.courierLocation = courierLocationText;
+        }
+        if (newStatus === "delivered") {
+            parcel.locationHistory.push({ action: "Выдана получателю", time: new Date().toLocaleString() });
+        }
+        saveParcels();
+        if (currentUser && currentUser.role === 'worker') renderWorkerPanel();
+        if (currentUser && currentUser.role === 'courier') renderCourierPanel();
+        if (currentUser && currentUser.role === 'user') renderUserPanel();
+    }
+
+    function renderWorkerPanel() {
+        const container = document.getElementById('workerParcelsList');
+        if (parcels.length === 0) {
+            container.innerHTML = '<div class="parcel-item">Нет посылок.</div>';
+            return;
+        }
+        let html = '';
+        parcels.forEach(p => {
+            let statusText = "";
+            if (p.status === "created") statusText = "Создана";
+            else if (p.status === "office") statusText = "На складе (можно выдать)";
+            else if (p.status === "courier") statusText = "У курьера";
+            else statusText = "Выдана";
+            html += `
+                <div class="parcel-item">
+                    <div class="flex-between">
+                        <span class="parcel-id">${p.id}</span>
+                        <span class="status status-${p.status}">${statusText}</span>
+                    </div>
+                    <div>📤 От: ${p.from} (${p.fromPhone})</div>
+                    <div>📥 Кому: ${p.to}</div>
+                    <div>📍 Адрес: ${p.address}</div>
+                    <div>⚖️ ${p.weight} кг</div>
+                    <div style="margin-top: 8px;">
+            `;
+            if (p.status === "created") {
+                html += `<button class="secondary" onclick="updateStatus('${p.id}', 'office')">📥 Посылка прибыла в отделение</button>`;
+            } else if (p.status === "office") {
+                html += `<button class="secondary" onclick="updateStatus('${p.id}', 'delivered')">✅ Выдать получателю</button>`;
+            } else if (p.status === "courier") {
+                html += `<button disabled style="background:#e2e3e5;">⏳ У курьера</button>`;
+            } else {
+                html += `<button disabled style="background:#e2e3e5;">✅ Выдана</button>`;
+            }
+            html += `</div></div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    // ---------- Функции курьера ----------
+    function assignCourierToParcel(parcelId) {
+        const parcel = parcels.find(p => p.id === parcelId);
+        if (parcel && parcel.status === "office") {
+            parcel.status = "courier";
+            parcel.courierLocation = "Забрана курьером со склада";
+            saveParcels();
+            renderWorkerPanel(); // обновить для работника
+            renderCourierPanel();
+        }
+    }
+
+    function updateCourierLocationManually(parcelId) {
+        const newLocation = prompt("Введите текущее местоположение посылки (город, улица или статус):", "Например: Киев, склад / В пути в Овруч / Доставлена на ул. Богдана Хмельницкого 53");
+        if (newLocation && newLocation.trim()) {
+            const parcel = parcels.find(p => p.id === parcelId);
+            if (parcel) {
+                parcel.courierLocation = newLocation.trim();
+                saveParcels();
+                renderCourierPanel();
+                if (currentUser && currentUser.role === 'user') renderUserPanel();
+                alert("Локация обновлена");
+            }
+        }
+    }
+
+    function markDeliveredByCourier(parcelId) {
+        if (confirm("Отметить посылку как доставленную?")) {
+            const parcel = parcels.find(p => p.id === parcelId);
+            if (parcel) {
+                parcel.status = "delivered";
+                parcel.courierLocation = "Доставлена получателю";
+                saveParcels();
+                renderCourierPanel();
+                if (currentUser && currentUser.role === 'user') renderUserPanel();
+                if (currentUser && currentUser.role === 'worker') renderWorkerPanel();
+            }
+        }
+    }
+
+    function renderCourierPanel() {
+        const container = document.getElementById('courierParcelsList');
+        const courierParcels = parcels.filter(p => p.status === "courier");
+        if (courierParcels.length === 0) {
+            container.innerHTML = '<div class="parcel-item">Нет назначенных посылок. Работник почты должен передать их курьеру.</div>';
+            return;
+        }
+        let html = '';
+        courierParcels.forEach(p => {
+            html += `
+                <div class="parcel-item">
+                    <div class="flex-between">
+                        <span class="parcel-id">${p.id}</span>
+                        <span class="status status-courier">У курьера</span>
+                    </div>
+                    <div>📥 Получатель: ${p.to}</div>
+                    <div>📍 Адрес доставки: ${p.address}</div>
+                    <div>⚖️ ${p.weight} кг</div>
+                    <div class="geo-info">📍 Текущая позиция: ${p.courierLocation || "не указана"}</div>
+                    <button class="secondary" onclick="updateCourierLocationManually('${p.id}')">📍 Обновить местоположение</button>
+                    <button class="secondary" onclick="markDeliveredByCourier('${p.id}')">✅ Доставлено</button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        // также добавим список посылок, которые можно забрать со склада (статус office)
+        const availableParcels = parcels.filter(p => p.status === "office");
+        if (availableParcels.length > 0) {
+            let extraHtml = '<div class="card-title" style="margin-top:16px;">📦 Посылки на складе (можно забрать)</div>';
+            availableParcels.forEach(p => {
+                extraHtml += `
+                    <div class="parcel-item">
+                        <div>${p.id} — ${p.to}, адрес: ${p.address}</div>
+                        <button class="secondary" onclick="assignCourierToParcel('${p.id}')">🚚 Забрать для доставки</button>
+                    </div>
+                `;
+            });
+            container.insertAdjacentHTML('beforeend', extraHtml);
+        }
+    }
+
+    // Опубликуем функции в глобальном окне для onclick
+    window.updateStatus = updateStatus;
+    window.assignCourierToParcel = assignCourierToParcel;
+    window.updateCourierLocationManually = updateCourierLocationManually;
+    window.markDeliveredByCourier = markDeliveredByCourier;
+
+    // Инициализация обработчиков
+    document.getElementById('userCreateParcelBtn').addEventListener('click', createParcelForUser);
+
+    // Загрузка данных
+    loadData();
+</script>
+</body>
+</html>
