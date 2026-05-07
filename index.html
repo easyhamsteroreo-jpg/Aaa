@@ -3,60 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Easy Post — Рабочее место сотрудника</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Easy Post — Мультироль</title>
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
         }
         body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #f2f2f6;
-            padding: 0 0 70px 0;
+            padding-bottom: 70px;
         }
-        /* Мобильная карточка */
-        .app-container {
+        .app {
             max-width: 500px;
             margin: 0 auto;
             background: white;
             min-height: 100vh;
             box-shadow: 0 0 20px rgba(0,0,0,0.05);
         }
-        /* Хедер сотрудника */
-        .staff-header {
+        /* Переключатель ролей */
+        .role-selector {
+            background: white;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.96);
+        }
+        .role-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 30px;
+            background: #f1f3f5;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .role-btn.active {
             background: #1a5c9e;
             color: white;
-            padding: 24px 16px 16px;
-            border-bottom-left-radius: 24px;
-            border-bottom-right-radius: 24px;
         }
-        .staff-header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.3px;
-        }
-        .badge {
-            background: #ffcd3c;
-            color: #1a3e6f;
-            padding: 4px 12px;
-            border-radius: 30px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-            margin-top: 8px;
-        }
-        /* Основные секции */
-        .section {
-            background: white;
-            margin: 16px;
+        /* Основной контент */
+        .panel {
+            display: none;
             padding: 16px;
-            border-radius: 24px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-            border: 1px solid #e9ecef;
         }
-        .section-title {
+        .panel.active-panel {
+            display: block;
+        }
+        /* Карточки и формы */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid #eef2f6;
+        }
+        .card-title {
             font-weight: 600;
             font-size: 18px;
             margin-bottom: 14px;
@@ -66,323 +78,381 @@
             border-left: 4px solid #1a5c9e;
             padding-left: 12px;
         }
-        /* Поля и кнопки */
-        .input-group {
-            margin-bottom: 16px;
-        }
-        label {
-            font-size: 13px;
-            font-weight: 500;
-            color: #3a3a44;
-            display: block;
-            margin-bottom: 6px;
-        }
-        input, select {
+        input, textarea, select {
             width: 100%;
-            padding: 14px;
-            font-size: 16px;
+            padding: 12px;
+            margin-bottom: 12px;
             border: 1px solid #d4d4d8;
             border-radius: 14px;
+            font-size: 16px;
             background: #f9fafb;
         }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #1a5c9e;
-            background: white;
-        }
-        .btn {
+        button {
             background: #1a5c9e;
             color: white;
             border: none;
-            padding: 14px;
+            padding: 12px;
             border-radius: 14px;
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 500;
             width: 100%;
             cursor: pointer;
-            transition: 0.1s;
-            margin-top: 8px;
+            margin-top: 4px;
         }
-        .btn-secondary {
+        button.secondary {
             background: #eef2f9;
             color: #1a5c9e;
             border: 1px solid #cbd5e1;
         }
-        .btn-danger {
-            background: #dc2626;
-        }
-        .btn:active {
-            opacity: 0.8;
-            transform: scale(0.98);
-        }
-        /* Карточка заказа */
-        .order-card {
+        .parcel-item {
             background: #f8fafc;
-            border-radius: 20px;
-            padding: 15px;
-            margin-top: 12px;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 12px;
             border: 1px solid #e2e8f0;
         }
-        .order-id {
+        .parcel-id {
             font-family: monospace;
             font-weight: bold;
-            font-size: 16px;
             background: #eef2ff;
             display: inline-block;
             padding: 4px 10px;
             border-radius: 20px;
+            font-size: 12px;
         }
-        .status-badge {
+        .status {
             display: inline-block;
             padding: 4px 12px;
-            border-radius: 40px;
+            border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
+            margin-left: 8px;
         }
-        .status-in { background: #fee2e2; color: #b91c1c; }
-        .status-out { background: #dcfce7; color: #15803d; }
-        .grid-2 {
-            display: flex;
-            gap: 12px;
-            margin-top: 16px;
-        }
-        .grid-2 .btn { margin-top: 0; }
-        footer {
-            text-align: center;
+        .status-created { background: #e0e7ff; color: #3730a3; }
+        .status-office { background: #fff3e3; color: #b45309; }
+        .status-courier { background: #dbeafe; color: #1e40af; }
+        .status-delivered { background: #dcfce7; color: #15803d; }
+        .geo-info {
             font-size: 12px;
-            color: #94a3b8;
-            padding: 20px;
+            color: #475569;
+            margin-top: 8px;
+            word-break: break-all;
         }
-        /* Адаптация под темный режим? Не требуется, но оставим светлый */
-        @media (max-width: 480px) {
-            .section { margin: 12px; }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        hr {
+            margin: 12px 0;
+        }
+        .btn-icon {
+            background: none;
+            border: none;
+            font-size: 20px;
+            padding: 0;
+            width: auto;
+            display: inline;
+            color: #1a5c9e;
         }
     </style>
 </head>
 <body>
-<div class="app-container">
-    <div class="staff-header">
-        <h1>📦 Easy Post</h1>
-        <p style="opacity:0.9; font-size:14px;">Рабочее место сотрудника</p>
-        <div class="badge">Смена: Активна</div>
+<div class="app">
+    <!-- Выбор роли -->
+    <div class="role-selector">
+        <button class="role-btn active" data-role="sender">📦 Отправитель</button>
+        <button class="role-btn" data-role="worker">🏢 Работник почты</button>
+        <button class="role-btn" data-role="courier">🚚 Курьер</button>
     </div>
 
-    <!-- Секция выбора действия -->
-    <div class="section">
-        <div class="section-title">⚡ Операции с посылками</div>
-        <div class="input-group">
-            <label>📱 Сканировать / Ввести № накладной</label>
-            <input type="text" id="trackInput" placeholder="Наведите камеру или введите EPXXXXXXXXXUA" value="EP240512001UA">
+    <!-- Панель Отправитель -->
+    <div id="senderPanel" class="panel active-panel">
+        <div class="card">
+            <div class="card-title">➕ Создать новую посылку</div>
+            <input type="text" id="fromName" placeholder="От кого (ФИО)" value="Иван Петров">
+            <input type="text" id="toName" placeholder="Кому (ФИО)" value="Анна Сидорова">
+            <input type="text" id="toAddress" placeholder="Адрес доставки" value="ул. Независимости, 10, Киев">
+            <input type="text" id="weight" placeholder="Вес (кг)" value="1.5">
+            <button id="createParcelBtn">📮 Создать посылку</button>
         </div>
-        <div class="grid-2">
-            <button class="btn" id="findParcelBtn">🔍 Найти</button>
-            <button class="btn btn-secondary" id="simulateScanBtn">📷 Скан (демо)</button>
-        </div>
-        <div id="parcelCard" style="margin-top: 16px;">
-            <!-- Динамическая карточка посылки будет появляться здесь -->
-            <div class="order-card" style="background:#f1f5f9; text-align:center; color:#475569;">
-                Введите или отсканируйте штрих-код
-            </div>
+        <div class="card">
+            <div class="card-title">📋 Мои посылки</div>
+            <div id="senderParcelsList">Загрузка...</div>
         </div>
     </div>
 
-    <!-- Секция приёма и выдачи -->
-    <div class="section" id="actionSection" style="display: none;">
-        <div class="section-title">🔄 Изменение статуса</div>
-        <div id="actionButtons">
-            <!-- Кнопки будут подставлены динамически -->
+    <!-- Панель Работник почты -->
+    <div id="workerPanel" class="panel">
+        <div class="card">
+            <div class="card-title">📦 Все посылки</div>
+            <div id="workerParcelsList">Загрузка...</div>
         </div>
     </div>
 
-    <!-- Секция журнала (история) -->
-    <div class="section">
-        <div class="section-title">📋 Журнал операций (смена)</div>
-        <div id="logList" style="max-height: 220px; overflow-y: auto;">
-            <div style="color:#94a3b8; text-align:center; padding:12px;">Здесь будут действия сотрудника</div>
+    <!-- Панель Курьер -->
+    <div id="courierPanel" class="panel">
+        <div class="card">
+            <div class="card-title">📍 Мои назначенные посылки</div>
+            <div id="courierParcelsList">Загрузка...</div>
         </div>
-        <button class="btn btn-secondary" id="clearLogBtn" style="margin-top: 12px;">🗑 Очистить историю</button>
+        <div class="card">
+            <div class="card-title">🗺️ Имитация геолокации</div>
+            <button id="updateLocationBtn" class="secondary">📡 Отправить текущую позицию курьера</button>
+            <div id="lastLocation" class="geo-info">Последняя позиция: не указана</div>
+        </div>
     </div>
-    <footer>Easy Post — внутренний инструмент / демо-версия</footer>
 </div>
 
 <script>
-    // Хранилище "посылок" в памяти (имитация БД)
-    let parcelsDB = [
-        { id: "EP240512001UA", status: "На складі", receiver: "Іванченко О.", dateIn: "2026-05-07 09:23", dateOut: null },
-        { id: "EP240512089UA", status: "Очікує видачі", receiver: "Мельник А.", dateIn: "2026-05-06 14:10", dateOut: null },
-        { id: "EP240511455UA", status: "Видано", receiver: "Коваленко С.", dateIn: "2026-05-05 11:45", dateOut: "2026-05-06 16:20" }
-    ];
-    
-    // Журнал (действия за смену)
-    let actionLog = [];
+    // --- Хранилище (localStorage) ---
+    let parcels = [];     // массив посылок
+    let courierLocation = { lat: 50.4501, lng: 30.5234, updated: null }; // Киев по умолчанию
 
-    // DOM элементы
-    const trackInput = document.getElementById('trackInput');
-    const findBtn = document.getElementById('findParcelBtn');
-    const simulateScanBtn = document.getElementById('simulateScanBtn');
-    const parcelCardDiv = document.getElementById('parcelCard');
-    const actionSection = document.getElementById('actionSection');
-    const actionButtonsDiv = document.getElementById('actionButtons');
-    const logListDiv = document.getElementById('logList');
-    const clearLogBtn = document.getElementById('clearLogBtn');
+    function loadData() {
+        const stored = localStorage.getItem('easy_post_data');
+        if (stored) {
+            const data = JSON.parse(stored);
+            parcels = data.parcels || [];
+            courierLocation = data.courierLocation || { lat: 50.4501, lng: 30.5234, updated: null };
+        } else {
+            // демо-посылки
+            parcels = [
+                { id: "EP240512001UA", from: "Иван Петров", to: "Анна Сидорова", address: "ул. Независимости, 10, Киев", weight: "1.5", status: "created", courierNote: null, locationHistory: [] },
+                { id: "EP240512002UA", from: "Олег Коваль", to: "Мария Лис", address: "пр. Свободы, 45, Львов", weight: "3.2", status: "office", courierNote: null, locationHistory: [] },
+                { id: "EP240511455UA", from: "Сергей Бондар", to: "Тарас Шевченко", address: "ул. Грушевского, 12, Киев", weight: "0.8", status: "courier", courierNote: "Курьер: Андрей", locationHistory: [] }
+            ];
+            saveData();
+        }
+        renderAll();
+    }
 
-    // Функция рендеринга журнала
-    function renderLog() {
-        if (actionLog.length === 0) {
-            logListDiv.innerHTML = '<div style="color:#94a3b8; text-align:center; padding:12px;">Нет операций за смену</div>';
+    function saveData() {
+        localStorage.setItem('easy_post_data', JSON.stringify({ parcels, courierLocation }));
+    }
+
+    // Генерация трек-номера
+    function generateTrackingNumber() {
+        const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const randomStr = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
+        const numPart = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+        return `EP${numPart}${randomStr}`;
+    }
+
+    // Создание посылки (отправитель)
+    function createParcel() {
+        const fromName = document.getElementById('fromName').value.trim();
+        const toName = document.getElementById('toName').value.trim();
+        const address = document.getElementById('toAddress').value.trim();
+        const weight = document.getElementById('weight').value.trim();
+        if (!fromName || !toName || !address) {
+            alert("Заполните все поля");
+            return;
+        }
+        const newParcel = {
+            id: generateTrackingNumber(),
+            from: fromName,
+            to: toName,
+            address: address,
+            weight: weight || "0",
+            status: "created",   // created → office → courier → delivered
+            courierNote: null,
+            locationHistory: []
+        };
+        parcels.unshift(newParcel);
+        saveData();
+        renderAll();
+        // очистка формы
+        document.getElementById('fromName').value = '';
+        document.getElementById('toName').value = '';
+        document.getElementById('toAddress').value = '';
+        document.getElementById('weight').value = '';
+        alert(`Посылка создана! Трек-номер: ${newParcel.id}`);
+    }
+
+    // Изменение статуса (работник почты или курьер)
+    function updateStatus(parcelId, newStatus, courierName = null) {
+        const parcel = parcels.find(p => p.id === parcelId);
+        if (!parcel) return;
+        parcel.status = newStatus;
+        if (newStatus === "courier" && courierName) {
+            parcel.courierNote = `Курьер: ${courierName}`;
+        }
+        if (newStatus === "delivered") {
+            parcel.locationHistory.push({ action: "Доставлена", time: new Date().toLocaleString() });
+        }
+        saveData();
+        renderAll();
+    }
+
+    // Курьер: обновление геолокации
+    function updateCourierLocation() {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    courierLocation = {
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        updated: new Date().toLocaleString()
+                    };
+                    saveData();
+                    document.getElementById('lastLocation').innerHTML = `📍 Широта: ${courierLocation.lat.toFixed(5)}, Долгота: ${courierLocation.lng.toFixed(5)}<br>Время: ${courierLocation.updated}`;
+                    alert("Геолокация курьера обновлена");
+                    renderAll(); // обновим список посылок, чтобы показать, где курьер
+                },
+                (err) => {
+                    alert("Не удалось получить геолокацию: " + err.message);
+                    // симуляция
+                    courierLocation = { lat: 50.4501 + (Math.random() - 0.5) * 0.02, lng: 30.5234 + (Math.random() - 0.5) * 0.02, updated: new Date().toLocaleString() };
+                    saveData();
+                    document.getElementById('lastLocation').innerHTML = `📍 Симуляция: ${courierLocation.lat.toFixed(5)}, ${courierLocation.lng.toFixed(5)}<br>Время: ${courierLocation.updated}`;
+                    renderAll();
+                }
+            );
+        } else {
+            alert("Геолокация не поддерживается браузером");
+        }
+    }
+
+    // Рендер всех ролей
+    function renderAll() {
+        renderSender();
+        renderWorker();
+        renderCourier();
+    }
+
+    // Отправитель: показывает его посылки
+    function renderSender() {
+        const container = document.getElementById('senderParcelsList');
+        const myParcels = parcels.filter(p => p.from === document.getElementById('fromName').value.trim() || true); // в демо-режиме показываем все, но по идее по отправителю
+        // для удобства показываем все посылки отправителя (по полю from, если оно совпадает с текущим вводом, но лучше показывать все созданные текущим пользователем — упростим: все)
+        // реально надо связывать с авторизацией — сделаем проще: отображаем все посылки со статусом
+        if (parcels.length === 0) {
+            container.innerHTML = '<div class="parcel-item">Нет посылок. Создайте первую.</div>';
             return;
         }
         let html = '';
-        for (let i = actionLog.length-1; i >= 0; i--) {
-            const log = actionLog[i];
-            html += `<div style="padding: 10px 0; border-bottom:1px solid #eef2f6; font-size:14px;">
-                        <span style="font-weight:500;">${log.time}</span> — ${log.text}
-                     </div>`;
-        }
-        logListDiv.innerHTML = html;
+        parcels.forEach(p => {
+            let statusText = "";
+            if (p.status === "created") statusText = "Создана (ожидает приёма)";
+            else if (p.status === "office") statusText = "Принята в отделении";
+            else if (p.status === "courier") statusText = "У курьера";
+            else statusText = "Доставлена";
+            html += `
+                <div class="parcel-item">
+                    <div class="flex-between">
+                        <span class="parcel-id">${p.id}</span>
+                        <span class="status status-${p.status}">${statusText}</span>
+                    </div>
+                    <div>📤 От: ${p.from}</div>
+                    <div>📥 Кому: ${p.to}</div>
+                    <div>📍 Адрес: ${p.address}</div>
+                    <div>⚖️ Вес: ${p.weight} кг</div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
     }
 
-    function addLogMessage(message) {
-        const now = new Date();
-        const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-        actionLog.push({ time: timeStr, text: message });
-        renderLog();
+    // Работник почты: может менять статус created → office → courier
+    function renderWorker() {
+        const container = document.getElementById('workerParcelsList');
+        if (parcels.length === 0) {
+            container.innerHTML = '<div class="parcel-item">Нет посылок в системе.</div>';
+            return;
+        }
+        let html = '';
+        parcels.forEach(p => {
+            let statusText = "";
+            if (p.status === "created") statusText = "Создана";
+            else if (p.status === "office") statusText = "На складе";
+            else if (p.status === "courier") statusText = "У курьера";
+            else statusText = "Доставлена";
+            html += `
+                <div class="parcel-item">
+                    <div class="flex-between">
+                        <span class="parcel-id">${p.id}</span>
+                        <span class="status status-${p.status}">${statusText}</span>
+                    </div>
+                    <div>📤 От: ${p.from}</div>
+                    <div>📥 Кому: ${p.to}</div>
+                    <div>📍 Адрес: ${p.address}</div>
+                    <div>⚖️ ${p.weight} кг</div>
+                    <div style="margin-top: 8px;">
+            `;
+            // Кнопки действий в зависимости от статуса
+            if (p.status === "created") {
+                html += `<button class="secondary" onclick="updateStatus('${p.id}', 'office')">📥 Принять на склад</button>`;
+            } else if (p.status === "office") {
+                html += `<button class="secondary" onclick="updateStatus('${p.id}', 'courier', 'Курьер №1')">🚚 Передать курьеру</button>`;
+            } else if (p.status === "courier") {
+                html += `<button class="secondary" disabled style="opacity:0.5;">⏳ В курьерской доставке</button>`;
+            } else {
+                html += `<button disabled style="background:#e2e3e5;">✅ Доставлено</button>`;
+            }
+            html += `</div></div>`;
+        });
+        container.innerHTML = html;
     }
 
-    // Функция отображения карточки посылки и кнопок действий
-    function renderParcelCard(parcel) {
-        if (!parcel) {
-            parcelCardDiv.innerHTML = `<div class="order-card" style="background:#fee2e2; border-color:#fecaca;">
-                                        ❌ Посылка не найдена. Проверьте номер.
-                                       </div>`;
-            actionSection.style.display = 'none';
+    // Курьер: видит посылки со статусом "courier" и может отметить доставку
+    function renderCourier() {
+        const container = document.getElementById('courierParcelsList');
+        const courierParcels = parcels.filter(p => p.status === "courier");
+        if (courierParcels.length === 0) {
+            container.innerHTML = '<div class="parcel-item">Нет назначенных посылок.</div>';
             return;
         }
-        
-        // Определяем статус по-русски
-        let statusText = "";
-        let statusClass = "";
-        if (parcel.status === "На складі") { statusText = "📥 Принято / На складе"; statusClass = "status-in"; }
-        else if (parcel.status === "Очікує видачі") { statusText = "⏳ Ожидает выдачи"; statusClass = "status-out"; }
-        else if (parcel.status === "Видано") { statusText = "✅ Выдано получателю"; statusClass = "status-in"; }
-        else { statusText = parcel.status; statusClass = ""; }
-        
-        let cardHtml = `<div class="order-card">
-                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-                                <span class="order-id">${parcel.id}</span>
-                                <span class="status-badge ${statusClass}">${statusText}</span>
-                            </div>
-                            <div style="margin-top: 12px;">
-                                <div>👤 Получатель: <strong>${parcel.receiver || "—"}</strong></div>
-                                <div>📅 Поступление: ${parcel.dateIn || "—"}</div>
-                                ${parcel.dateOut ? `<div>🚚 Выдача: ${parcel.dateOut}</div>` : ''}
-                            </div>
-                        </div>`;
-        parcelCardDiv.innerHTML = cardHtml;
-        
-        // Генерация кнопок в зависимости от текущего статуса
-        let btnsHtml = "";
-        const now = new Date();
-        const dateString = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-        
-        if (parcel.status === "На складі") {
-            btnsHtml = `<button class="btn" id="actionToWait">📦 Перевести в «Ожидает выдачи»</button>`;
-        } else if (parcel.status === "Очікує видачі") {
-            btnsHtml = `<button class="btn" id="actionToGiveOut">✍️ Выдать получателю</button>`;
-        } else if (parcel.status === "Видано") {
-            btnsHtml = `<button class="btn btn-secondary" disabled style="opacity:0.6;">🔒 Посылка уже выдана</button>`;
+        let html = '';
+        courierParcels.forEach(p => {
+            html += `
+                <div class="parcel-item">
+                    <div class="flex-between">
+                        <span class="parcel-id">${p.id}</span>
+                        <span class="status status-courier">У курьера</span>
+                    </div>
+                    <div>📥 Получатель: ${p.to}</div>
+                    <div>📍 Адрес: ${p.address}</div>
+                    <div>⚖️ ${p.weight} кг</div>
+                    <button class="secondary" onclick="updateStatus('${p.id}', 'delivered')">✅ Доставлено</button>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        // Показываем последнюю геолокацию курьера
+        if (courierLocation.updated) {
+            document.getElementById('lastLocation').innerHTML = `📍 Последняя позиция курьера:<br>Широта: ${courierLocation.lat.toFixed(5)}, Долгота: ${courierLocation.lng.toFixed(5)}<br>Время: ${courierLocation.updated}`;
         } else {
-            btnsHtml = `<button class="btn btn-secondary" disabled>Статус не определён</button>`;
+            document.getElementById('lastLocation').innerHTML = `📍 Позиция ещё не отправлена. Нажмите кнопку выше.`;
         }
+    }
+
+    // --- Переключение ролей ---
+    function switchRole(role) {
+        document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active-panel'));
+        if (role === 'sender') document.getElementById('senderPanel').classList.add('active-panel');
+        if (role === 'worker') document.getElementById('workerPanel').classList.add('active-panel');
+        if (role === 'courier') document.getElementById('courierPanel').classList.add('active-panel');
         
-        actionButtonsDiv.innerHTML = btnsHtml;
-        actionSection.style.display = 'block';
-        
-        // Навешиваем обработчики на динамические кнопки
-        if (parcel.status === "На складі") {
-            const toWaitBtn = document.getElementById('actionToWait');
-            if (toWaitBtn) {
-                toWaitBtn.onclick = () => {
-                    // обновляем статус в БД
-                    const index = parcelsDB.findIndex(p => p.id === parcel.id);
-                    if (index !== -1) {
-                        parcelsDB[index].status = "Очікує видачі";
-                        addLogMessage(`📦 Посылка ${parcel.id} переведена в статус "Ожидает выдачи"`);
-                        // Перерендерим карточку
-                        renderParcelCard(parcelsDB[index]);
-                    }
-                };
-            }
-        } else if (parcel.status === "Очікує видачі") {
-            const giveOutBtn = document.getElementById('actionToGiveOut');
-            if (giveOutBtn) {
-                giveOutBtn.onclick = () => {
-                    const index = parcelsDB.findIndex(p => p.id === parcel.id);
-                    if (index !== -1) {
-                        const nowTime = `${new Date().getFullYear()}-${(new Date().getMonth()+1).toString().padStart(2,'0')}-${new Date().getDate().toString().padStart(2,'0')} ${new Date().getHours().toString().padStart(2,'0')}:${new Date().getMinutes().toString().padStart(2,'0')}`;
-                        parcelsDB[index].status = "Видано";
-                        parcelsDB[index].dateOut = nowTime;
-                        addLogMessage(`✅ Посылка ${parcel.id} ВЫДАНА получателю ${parcelsDB[index].receiver}`);
-                        renderParcelCard(parcelsDB[index]);
-                    }
-                };
-            }
-        }
+        document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.role-btn[data-role="${role}"]`).classList.add('active');
+        renderAll(); // обновить данные при смене
     }
+
+    // Инициализация событий
+    document.getElementById('createParcelBtn').addEventListener('click', createParcel);
+    document.getElementById('updateLocationBtn').addEventListener('click', updateCourierLocation);
     
-    // Функция поиска посылки по номеру
-    function findParcelById(parcelId) {
-        if (!parcelId) return null;
-        return parcelsDB.find(p => p.id === parcelId.trim());
-    }
-    
-    function handleFindParcel() {
-        const rawId = trackInput.value.trim();
-        if (rawId === "") {
-            parcelCardDiv.innerHTML = `<div class="order-card" style="background:#fff3e3;">⚠️ Введите номер накладной</div>`;
-            actionSection.style.display = 'none';
-            return;
-        }
-        const parcel = findParcelById(rawId);
-        if (parcel) {
-            renderParcelCard(parcel);
-            addLogMessage(`🔎 Поиск: ${parcel.id} — текущий статус: ${parcel.status}`);
-        } else {
-            parcelCardDiv.innerHTML = `<div class="order-card" style="background:#fee2e2;">❌ Посылка ${rawId} не найдена в системе.</div>`;
-            actionSection.style.display = 'none';
-            addLogMessage(`⚠️ Ненайденная посылка: ${rawId}`);
-        }
-    }
-    
-    // Имитация сканирования (добавляет префикс)
-    function simulateScan() {
-        const demoScans = ["EP240512001UA", "EP240512089UA", "EP240511455UA", "EP987654321UA"];
-        const randomScan = demoScans[Math.floor(Math.random() * demoScans.length)];
-        trackInput.value = randomScan;
-        // сразу вызываем поиск:
-        handleFindParcel();
-        addLogMessage(`📷 Сканирование (демо): ${randomScan}`);
-    }
-    
-    // Очистка журнала
-    clearLogBtn.addEventListener('click', () => {
-        actionLog = [];
-        renderLog();
-        addLogMessage("🗑️ Журнал операций очищен");
+    document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            switchRole(e.target.getAttribute('data-role'));
+        });
     });
-    
-    // События
-    findBtn.addEventListener('click', handleFindParcel);
-    simulateScanBtn.addEventListener('click', simulateScan);
-    
-    // Также enter в поле ввода
-    trackInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleFindParcel();
-    });
-    
-    // Инициализация - отображаем подсказку
-    renderLog();
-    addLogMessage("🚀 Смена начата. Сотрудник авторизован (демо).");
+
+    // Загружаем данные и рендерим
+    loadData();
+    window.updateStatus = updateStatus; // для вызова из onclick
 </script>
 </body>
 </html>
