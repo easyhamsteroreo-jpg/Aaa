@@ -3,428 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Easy Post — Автономная версия</title>
+    <title>Easy Post — с передачей по ссылке</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: #f2f2f6;
-            padding: 16px;
-            padding-bottom: 80px;
-        }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 16px;
-            margin-bottom: 16px;
-            border: 1px solid #eef2f6;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        .card-title {
-            font-weight: 600;
-            font-size: 18px;
-            margin-bottom: 12px;
-            border-left: 4px solid #1a5c9e;
-            padding-left: 12px;
-        }
-        input, button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 8px;
-            border-radius: 14px;
-            border: 1px solid #d4d4d8;
-            font-size: 16px;
-        }
-        button {
-            background: #1a5c9e;
-            color: white;
-            font-weight: 500;
-            border: none;
-            cursor: pointer;
-        }
-        button.secondary {
-            background: #eef2f9;
-            color: #1a5c9e;
-            border: 1px solid #cbd5e1;
-        }
-        .role-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .role-buttons button {
-            flex: 1;
-            background: #f1f3f5;
-            color: #1e293b;
-        }
-        .role-buttons button.selected {
-            background: #1a5c9e;
-            color: white;
-        }
-        .status {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-        .status-created { background: #e0e7ff; color: #3730a3; }
-        .status-office { background: #fff3e3; color: #b45309; }
-        .status-courier { background: #dbeafe; color: #1e40af; }
-        .status-delivered { background: #dcfce7; color: #15803d; }
-        .parcel-item {
-            background: #f8fafc;
-            border-radius: 16px;
-            padding: 12px;
-            margin-bottom: 12px;
-            border: 1px solid #e2e8f0;
-        }
-        .flex-between {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .geo-info {
-            font-size: 12px;
-            color: #475569;
-            margin-top: 6px;
-        }
-        .hidden {
-            display: none;
-        }
-        iframe {
-            width: 100%;
-            height: 200px;
-            border-radius: 16px;
-            margin-top: 8px;
-        }
+        body { font-family: system-ui; background: #f2f2f6; padding: 16px; }
+        .container { max-width: 500px; margin: auto; }
+        .card { background: white; border-radius: 20px; padding: 16px; margin-bottom: 16px; }
+        input, button { width: 100%; padding: 12px; margin-top: 8px; border-radius: 14px; border: 1px solid #ccc; }
+        button { background: #1a5c9e; color: white; font-weight: bold; }
+        .parcel-item { background: #f8fafc; border-radius: 16px; padding: 12px; margin-top: 8px; }
     </style>
 </head>
 <body>
 <div class="container" id="app"></div>
-
 <script>
-    // ---------- Хранилище ----------
-    let currentUser = null;       // { phone, role }
-    let parcels = [];             // все посылки
-    let users = [];               // { phone, role }
+    let currentUser = null;
+    let parcels = JSON.parse(localStorage.getItem('parcels') || '[]');
+    let users = JSON.parse(localStorage.getItem('users') || '[]');
 
-    function loadData() {
-        const storedParcels = localStorage.getItem('easy_post_parcels');
-        if (storedParcels) parcels = JSON.parse(storedParcels);
-        else {
-            // демо-посылки
-            parcels = [
-                { id: "EP240512001UA", from: "Иван Петров", fromPhone: "+380991234567", to: "Анна Сидорова", address: "ул. Богдана Хмельницкого 53, Овруч", weight: "1.5", status: "created", courierLocation: null },
-                { id: "EP240512002UA", from: "Олег Коваль", fromPhone: "+380671112233", to: "Мария Лис", address: "пр. Свободы, 45, Львов", weight: "3.2", status: "office", courierLocation: null }
-            ];
-            saveParcels();
-        }
-        const storedUsers = localStorage.getItem('easy_post_users');
-        if (storedUsers) users = JSON.parse(storedUsers);
-        else users = [];
+    function save() {
+        localStorage.setItem('parcels', JSON.stringify(parcels));
+        localStorage.setItem('users', JSON.stringify(users));
     }
 
-    function saveParcels() { localStorage.setItem('easy_post_parcels', JSON.stringify(parcels)); }
-    function saveUsers() { localStorage.setItem('easy_post_users', JSON.stringify(users)); }
-
-    function generateTrackingNumber() {
-        const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-        const randomStr = Array.from({ length: 4 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
-        const numPart = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-        return `EP${numPart}${randomStr}`;
+    function generateId() {
+        return 'EP' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).substr(2, 4).toUpperCase();
     }
 
-    // ---------- Экспорт/импорт (синхронизация между устройствами) ----------
-    function exportData() {
+    // ----- ЭКСПОРТ ВСЕХ ДАННЫХ В ОДНУ ССЫЛКУ -----
+    function shareAllData() {
         const data = { parcels, users };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const json = JSON.stringify(data);
+        // Кодируем в компактную ссылку
+        const encoded = encodeURIComponent(json);
+        // Можно создать маленький html с авто-восстановлением
+        const restoreHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Восстановить Easy Post</title><script>
+            const data = JSON.parse(decodeURIComponent("${encoded}"));
+            localStorage.setItem('parcels', JSON.stringify(data.parcels));
+            localStorage.setItem('users', JSON.stringify(data.users));
+            alert('Данные восстановлены! Перейдите в приложение.');
+            location.href = 'index.html';
+        <\/script><body>Восстановление...</body></html>`;
+        const blob = new Blob([restoreHtml], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `easy_post_backup_${new Date().toISOString().slice(0,19)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        alert("Резервная копия сохранена. Перешлите файл на другое устройство и восстановите через «Восстановить».");
+        // Показываем кнопку "Поделиться" через системное меню
+        if (navigator.share) {
+            navigator.share({
+                title: 'Easy Post - резервная копия',
+                files: [new File([blob], 'easy_post_restore.html', { type: 'text/html' })]
+            }).catch(() => alert('Не удалось поделиться'));
+        } else {
+            // Если поделиться нельзя, копируем ссылку
+            prompt('Отправьте эту ссылку на другой телефон:', url);
+        }
     }
 
-    function importData(file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const data = JSON.parse(e.target.result);
-                if (data.parcels) parcels = data.parcels;
-                if (data.users) users = data.users;
-                saveParcels();
-                saveUsers();
-                alert("Данные восстановлены! Перезагрузите страницу.");
-                location.reload();
-            } catch(err) {
-                alert("Ошибка: неверный файл");
-            }
-        };
-        reader.readAsText(file);
-    }
-
-    // ---------- UI Рендер ----------
+    // ----- Логин и роли (максимально упрощён) -----
     function renderLogin() {
         document.getElementById('app').innerHTML = `
             <div class="card">
-                <div class="card-title">📱 Вход в Easy Post</div>
+                <h3>Вход</h3>
                 <input type="tel" id="phone" placeholder="+380XXXXXXXXX" value="+380991234567">
-                <button id="sendCodeBtn">📲 Отправить код</button>
-                <div id="codeSection" class="hidden">
-                    <input type="text" id="smsCode" placeholder="Код из SMS">
-                    <button id="verifyBtn">✅ Подтвердить</button>
-                </div>
-                <p style="font-size:12px; margin-top:10px;">Демо-код: 123456</p>
-                <hr style="margin:16px 0;">
-                <button id="exportBtn" class="secondary">💾 Сохранить резервную копию</button>
-                <input type="file" id="importFile" accept=".json" style="display:none">
-                <button id="importBtn" class="secondary">📂 Восстановить из копии</button>
+                <button id="sendCode">Далее</button>
             </div>
         `;
-        let phoneInput = document.getElementById('phone');
-        let sendBtn = document.getElementById('sendCodeBtn');
-        sendBtn.onclick = () => {
-            let phone = phoneInput.value.trim();
-            if (!phone.startsWith('+380')) return alert('Номер должен начинаться с +380');
-            localStorage.setItem('temp_phone', phone);
-            document.getElementById('codeSection').classList.remove('hidden');
-            alert('Код 123456 отправлен (демо)');
-        };
-        document.getElementById('verifyBtn').onclick = () => {
-            let code = document.getElementById('smsCode').value.trim();
-            if (code !== '123456') return alert('Неверный код');
-            let phone = localStorage.getItem('temp_phone');
+        document.getElementById('sendCode').onclick = () => {
+            let phone = document.getElementById('phone').value.trim();
+            if (!phone.startsWith('+380')) return alert('+380...');
             let user = users.find(u => u.phone === phone);
             if (!user) {
                 user = { phone, role: null };
                 users.push(user);
-                saveUsers();
+                save();
             }
             currentUser = user;
             if (user.role) renderRolePanel(user.role);
             else renderChooseRole();
-        };
-        document.getElementById('exportBtn').onclick = () => exportData();
-        document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
-        document.getElementById('importFile').onchange = (e) => {
-            if (e.target.files.length) importData(e.target.files[0]);
         };
     }
 
     function renderChooseRole() {
         document.getElementById('app').innerHTML = `
             <div class="card">
-                <div class="card-title">👤 Выберите роль</div>
-                <div class="role-buttons">
-                    <button id="roleUser">📦 Пользователь</button>
-                    <button id="roleWorker">🏢 Работник почты</button>
-                    <button id="roleCourier">🚚 Курьер</button>
-                </div>
-                <button id="logoutBtn" class="secondary" style="margin-top:16px;">Выйти</button>
+                <h3>Кто вы?</h3>
+                <button id="roleUser">Пользователь</button>
+                <button id="roleWorker">Работник почты</button>
+                <button id="roleCourier">Курьер</button>
             </div>
         `;
-        document.getElementById('roleUser').onclick = () => setRole('user');
-        document.getElementById('roleWorker').onclick = () => setRole('worker');
-        document.getElementById('roleCourier').onclick = () => setRole('courier');
-        document.getElementById('logoutBtn').onclick = () => logout();
-    }
-
-    function setRole(role) {
-        currentUser.role = role;
-        let idx = users.findIndex(u => u.phone === currentUser.phone);
-        users[idx].role = role;
-        saveUsers();
-        renderRolePanel(role);
-    }
-
-    function logout() {
-        currentUser = null;
-        localStorage.removeItem('temp_phone');
-        renderLogin();
-    }
-
-    // ---- Роль: Пользователь ----
-    function renderUser() {
-        let myParcels = parcels.filter(p => p.fromPhone === currentUser.phone);
-        let html = `
-            <div class="card">
-                <div class="card-title">➕ Отправить посылку</div>
-                <input type="text" id="fromName" placeholder="Ваше имя" value="Иван Петров">
-                <input type="text" id="toName" placeholder="Кому" value="Анна Сидорова">
-                <input type="text" id="address" placeholder="Адрес доставки" value="ул. Богдана Хмельницкого 53, Овруч">
-                <input type="text" id="weight" placeholder="Вес (кг)" value="2.3">
-                <button id="createBtn">📮 Создать посылку</button>
-            </div>
-            <div class="card">
-                <div class="card-title">📋 Мои посылки</div>
-                <div id="userList"></div>
-            </div>
-            <div class="card">
-                <div class="card-title">🎥 Easy Союз — YouTube</div>
-                <iframe src="https://www.youtube.com/embed?listType=user_uploads&list=UC5o6S7g916gt-zC8nEFQQiw" frameborder="0" allowfullscreen></iframe>
-            </div>
-            <button id="logoutUser" class="secondary">Выйти</button>
-        `;
-        document.getElementById('app').innerHTML = html;
-        function refreshUserList() {
-            let my = parcels.filter(p => p.fromPhone === currentUser.phone);
-            let container = document.getElementById('userList');
-            if (!my.length) { container.innerHTML = '<div>Нет посылок</div>'; return; }
-            container.innerHTML = my.map(p => `
-                <div class="parcel-item">
-                    <div class="flex-between">
-                        <span class="parcel-id">${p.id}</span>
-                        <span class="status status-${p.status}">${getStatusText(p.status)}</span>
-                    </div>
-                    <div>📤 От: ${p.from}</div>
-                    <div>📥 Кому: ${p.to}</div>
-                    <div>📍 Адрес: ${p.address}</div>
-                    <div>⚖️ Вес: ${p.weight} кг</div>
-                    ${p.courierLocation ? `<div class="geo-info">📍 ${p.courierLocation}</div>` : ''}
-                </div>
-            `).join('');
-        }
-        document.getElementById('createBtn').onclick = () => {
-            let fromName = document.getElementById('fromName').value.trim();
-            let toName = document.getElementById('toName').value.trim();
-            let address = document.getElementById('address').value.trim();
-            let weight = document.getElementById('weight').value.trim();
-            if (!fromName || !toName || !address) return alert('Заполните поля');
-            let newParcel = {
-                id: generateTrackingNumber(),
-                from: fromName,
-                fromPhone: currentUser.phone,
-                to: toName,
-                address: address,
-                weight: weight || "0",
-                status: "created",
-                courierLocation: null
-            };
-            parcels.unshift(newParcel);
-            saveParcels();
-            refreshUserList();
-            alert(`Посылка создана! Трек: ${newParcel.id}`);
+        document.
+        if (p) { p.status = newStatus; save(); refresh(); }
         };
-        document.getElementById('logoutUser').onclick = () => logout();
-        refreshUserList();
-    }
-
-    // ---- Роль: Работник почты ----
-    function renderWorker() {
-        let html = `<div class="card"><div class="card-title">📦 Все посылки</div><div id="workerList"></div></div><button id="logoutWorker" class="secondary">Выйти</button>`;
-        document.getElementById('app').innerHTML = html;
-        function refreshWorkerList() {
-            let container = document.getElementById('workerList');
-            if (!parcels.length) { container.innerHTML = '<div>Нет посылок</div>'; return; }
-            container.innerHTML = parcels.map(p => `
-                <div class="parcel-item">
-                    <div class="flex-between">
-                        <span class="parcel-id">${p.id}</span>
-                        <span class="status status-${p.status}">${getStatusText(p.status)}</span>
-                    </div>
-                    <div>📤 От: ${p.from} (${p.fromPhone})</div>
-                    <div>📥 Кому: ${p.to}</div>
-                    <div>📍 Адрес: ${p.address}</div>
-                    <div>⚖️ ${p.weight} кг</div>
-                    <div style="margin-top:8px;">
-                        ${p.status === 'created' ? `<button class="secondary" onclick="window.changeStatus('${p.id}','office')">📥 Принять на склад</button>` : ''}
-                        ${p.status === 'office' ? `<button class="secondary" onclick="window.changeStatus('${p.id}','delivered')">✅ Выдать получателю</button>` : ''}
-                        ${p.status === 'courier' ? `<button disabled>⏳ У курьера</button>` : ''}
-                        ${p.status === 'delivered' ? `<button disabled>✅ Выдана</button>` : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
-        document.getElementById('logoutWorker').onclick = () => logout();
-        refreshWorkerList();
-        window.changeStatus = (id, newStatus) => {
-            let p = parcels.find(p => p.id === id);
-            if (p) {
-                p.status = newStatus;
-                if (newStatus === 'delivered') p.courierLocation = 'Выдана получателю';
-                saveParcels();
-                refreshWorkerList();
-                // обновить другие интерфейсы, если открыты (не критично)
-            }
-        };
-    }
-
-    // ---- Роль: Курьер ----
-    function renderCourier() {
-        let html = `
-            <div class="card"><div class="card-title">🚚 Мои посылки (доставка)</div><div id="courierList"></div></div>
-            <div class="card"><div class="card-title">📦 Посылки на складе (можно забрать)</div><div id="availableList"></div></div>
-            <button id="logoutCourier" class="secondary">Выйти</button>
-        `;
-        document.getElementById('app').innerHTML = html;
-        function refresh() {
-            let courierParcels = parcels.filter(p => p.status === 'courier');
-            let available = parcels.filter(p => p.status === 'office');
-            let courierContainer = document.getElementById('courierList');
-            let availableContainer = document.getElementById('availableList');
-            courierContainer.innerHTML = courierParcels.map(p => `
-                <div class="parcel-item">
-                    <div class="flex-between"><span class="parcel-id">${p.id}</span><span class="status status-courier">У курьера</span></div>
-                    <div>📥 ${p.to}</div>
-                    <div>📍 ${p.address}</div>
-                    <div class="geo-info">📍 Текущее местоположение: ${p.courierLocation || 'не указано'}</div>
-                    <button class="secondary" onclick="window.updateLocation('${p.id}')">📍 Обновить местоположение</button>
-                    <button class="secondary" onclick="window.deliverParcel('${p.id}')">✅ Доставлено</button>
-                </div>
-            `).join('');
-            availableContainer.innerHTML = available.map(p => `
-                <div class="parcel-item">
-                    <div>${p.id} — ${p.to}, ${p.address}</div>
-                    <button class="secondary" onclick="window.takeParcel('${p.id}')">🚚 Забрать для доставки</button>
-                </div>
-            `).join('');
-            if (!courierParcels.length) courierContainer.innerHTML = '<div>Нет назначенных посылок</div>';
-            if (!available.length) availableContainer.innerHTML = '<div>Нет посылок на складе</div>';
-        }
-        window.updateLocation = (id) => {
-            let loc = prompt('Введите текущее местоположение посылки (город, улица, статус):', 'Киев, склад');
-            if (loc) {
-                let p = parcels.find(p => p.id === id);
-                if (p) { p.courierLocation = loc; saveParcels(); refresh(); }
-            }
-        };
-        window.deliverParcel = (id) => {
-            if (confirm('Отметить как доставленную?')) {
-                let p = parcels.find(p => p.id === id);
-                if (p) { p.status = 'delivered'; p.courierLocation = 'Доставлена'; saveParcels(); refresh(); }
-            }
-        };
-        window.takeParcel = (id) => {
-            let p = parcels.find(p => p.id === id);
-            if (p) { p.status = 'courier'; p.courierLocation = 'Забрана курьером'; saveParcels(); refresh(); }
-        };
-        document.getElementById('logoutCourier').onclick = () => logout();
+        document.getElementById('shareBtn').onclick = () => shareAllData();
+        document.getElementById('logout').onclick = () => { currentUser = null; renderLogin(); };
         refresh();
     }
 
-    function getStatusText(status) {
-        if (status === 'created') return 'Создана';
-        if (status === 'office') return 'На складе';
-        if (status === 'courier') return 'У курьера';
-        return 'Доставлена';
+    function renderCourier() {
+        let html = `<div class="card"><h3>Доставка</h3><div id="list"></div></div>
+                    <button id="shareBtn">📤 Отправить данные</button>
+                    <button id="logout">Выйти</button>`;
+        document.getElementById('app').innerHTML = html;
+        function refresh() {
+            let courier = parcels.filter(p => p.status === 'courier');
+            let available = parcels.filter(p => p.status === 'office');
+            let container = document.getElementById('list');
+            container.innerHTML = `
+                <h4>Мои посылки (у курьера)</h4>
+                ${courier.map(p => `
+                    <div class="parcel-item">
+                        ${p.id} — ${p.to}<br>
+                        📍 ${p.courierLocation || 'не указано'}<br>
+                        <button onclick="updateLoc('${p.id}')">📍 Обновить местоположение</button>
+                        <button onclick="deliver('${p.id}')">✅ Доставлено</button>
+                    </div>
+                `).join('') || 'Нет'}
+                <h4>Посылки на складе (забрать)</h4>
+                ${available.map(p => `
+                    <div class="parcel-item">
+                        ${p.id} — ${p.to}<br>
+                        <button onclick="take('${p.id}')">🚚 Забрать</button>
+                    </div>
+                `).join('') || 'Нет'}
+            `;
+        }
+        window.updateLoc = (id) => {
+            let loc = prompt('Местоположение:', 'Киев, склад');
+            if (loc) { let p = parcels.find(p => p.id === id); if (p) { p.courierLocation = loc; save(); refresh(); } }
+        };
+        window.deliver = (id) => {
+            if (confirm('Доставлена?')) { let p = parcels.find(p => p.id === id); if (p) { p.status = 'delivered'; save(); refresh(); } }
+        };
+        window.take = (id) => {
+            let p = parcels.find(p => p.id === id);
+            if (p) { p.status = 'courier'; p.courierLocation = 'Забрана курьером'; save(); refresh(); }
+        };
+        document.getElementById('shareBtn').onclick = () => shareAllData();
+        document.getElementById('logout').onclick = () => { currentUser = null; renderLogin(); };
+        refresh();
     }
 
-    function renderRolePanel(role) {
-        if (role === 'user') renderUser();
-        else if (role === 'worker') renderWorker();
-        else if (role === 'courier') renderCourier();
-    }
-
-    // ---------- Старт ----------
-    loadData();
     renderLogin();
 </script>
 </body>
