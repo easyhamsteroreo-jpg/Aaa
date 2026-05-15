@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Kinderland полиция - тест ввода</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f0e6d2; }
+        input, button { font-size: 20px; padding: 10px; margin: 5px; }
+        .card { background: white; border-radius: 20px; padding: 20px; max-width: 500px; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>👮‍♂️ Полицейский участок Kinderland</h2>
+    <input type="text" id="name" placeholder="Имя (например, Карина Гуня)" style="width: 90%;">
+    <br>
+    <input type="number" id="age" placeholder="Возраст" value="9" style="width: 90%;">
+    <br>
+    <input type="text" id="phone" placeholder="Номер телефона" style="width: 90%;">
+    <br>
+    <button id="addBtn">➕ Добавить в розыск</button>
+    <hr>
+    <h3>Список пропавших/в розыске</h3>
+    <ul id="list"></ul>
+    <p><em>Нажмите на имя, чтобы вынести из списка</em></p>
+</div>
+<script>
+    // Массив для хранения
+    let persons = [];
+
+    // Элементы
+    const nameInput = document.getElementById('name');
+    const ageInput = document.getElementById('age');
+    const phoneInput = document.getElementById('phone');
+    const addBtn = document.getElementById('addBtn');
+    const listUl = document.getElementById('list');
+
+    // Функция отображения списка
+    function renderList() {
+        listUl.innerHTML = '';
+        if (persons.length === 0) {
+            listUl.innerHTML = '<li>📭 База пуста. Добавьте человека.</li>';
+            return;
+        }
+        persons.forEach((person, index) => {
+            const li = document.createElement('li');
+            li.textContent = `${person.name}, ${person.age} лет, тел: ${person.phone} — ${person.status}`;
+            // Кнопка удаления
+            const delBtn = document.createElement('button');
+            delBtn.textContent = ' Вынести';
+            delBtn.style.marginLeft = '10px';
+            delBtn.onclick = () => {
+                persons.splice(index, 1);
+                renderList();
+            };
+            li.appendChild(delBtn);
+            listUl.appendChild(li);
+        });
+    }
+
+    // Добавление
+    addBtn.onclick = () => {
+        const name = nameInput.value.trim();
+        if (name === '') {
+            alert('Введите имя!');
+            return;
+        }
+        const age = ageInput.value || '?';
+        const phone = phoneInput.value.trim() || 'нет номера';
+        persons.push({
+            name: name,
+            age: age,
+            phone: phone,
+            status: 'В розыске 🔍'
+        });
+        // Очищаем поля
+        nameInput.value = '';
+        ageInput.value = '9';
+        phoneInput.value = '';
+        renderList();
+    };
+
+    // Для примера добавим Карину сразу
+    persons.push({ name: 'Карина Гуня', age: 9, phone: '+49123456789', status: 'В розыске 🔍' });
+    renderList();
+</script>
+</body>
+</html>
